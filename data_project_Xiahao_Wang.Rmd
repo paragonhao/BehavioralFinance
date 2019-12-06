@@ -1,0 +1,95 @@
+---
+header-includes:
+- \usepackage{amssymb, amsmath, amsthm}
+- \usepackage{tabu}
+- \newcommand{\E}{\mathbb{E}}
+- \newcommand{\var}{{\rm Var}}
+- \newcommand{\N}{\mathcal{N}}
+output: pdf_document
+---
+  
+\noindent \begin{tabu} to \textwidth {@{}X[4 l] @{}X[r]}
+\textbf{Data Project}           & \\ 
+\textbf{MFE 431: Behavioral Finance}   & \\ 
+\textbf{Professor: Avanidhar Subrahmanyam}         & \\
+\textbf{Student: Xiahao Wang}
+\end{tabu}
+
+
+## Objective: Replicate the sales in growth anomalies discussed in class fro the period 1990 to 2018
+
+For many years, scholars and investment professionals hav argued that value strategies  outperform the market. This data project takes references from Josef Andrei and Robert (1994) and tries to investigate sales growth as an anomaly between 1990 to 2018. 
+
+This project will sort the stock into 10 deciles and identify the performance of the long-short portfolio against the performance of the market. 
+
+1. \textbf{Universe of stocks: } 
+
+Stock return data is sourced from CRSP while the sales data is sourced from compustat both availabe from WRDS. Following the LSV paper, I restrict the sample to common shares( share code 10 and 11) and to securities traded in the New York Stock Exchange, American Stock Exchange, or the Nasdaq Stock Exchange (exchange codes 1, 2, and 3) from 1990 Jan to 2018 Dec. 
+
+2. \textbf{Criteria for sorting: } 
+
+In this project, we follow the assumption from the Fama French paper(1993) that rebalancing takes play at the end of June by which most of the companies would have reported their earnings. Annaul sales growth data is first generated using the sales data, firms that do not have sales data will not be included in the portfolio construction. Then a trailing 5 year average is then computed to sort the stocks into 10 portfolios. 
+
+Excess return is obtained by substracting the risk free rate obtained from Fama French website from the portfolio return. 
+
+3. \textbf{Result: } 
+
+The result shown below indicates that the firms with low sales growth does deliver better return as compared to firms with higher sales growth. Typically the low sales growth as considered value firms with stable income stream while the glamour firms might be spending a lot to drive the sales growth. 
+
+
+
+```{r echo=FALSE}
+suppressMessages(library(knitr))
+suppressWarnings(library(kableExtra))
+suppressMessages(library(lubridate))
+suppressMessages(library(data.table))
+summary <- as.data.table(read.csv("summary.csv"))
+
+title <- c("Excess Mean Return","Volatility","SR","SK(m)")
+summary <- cbind(Return_Statistics = title,summary)
+
+kable(summary, "latex", booktabs =T, caption = "Sales Growth decile portfolios", align ="l") %>% kable_styling(latex_options = c("striped", "scale_down"), position = "center") %>% add_header_above(c(" ", "Sales Growth decile Portfolios" = 11)) 
+
+```
+
+
+
+## Performance Against Market
+
+The following chart illustrates the performance of the value strategy with sales growth, a break down of winner minus loser deciles and also a comparision with market value-weighted portfolio. SP500 value-weight portfolio is used as a benchmark portfolio. This indicates that a long-short strategy on growth sales along would not deliver superior return as compared to the market portfolio. 
+
+```{r echo=FALSE}
+# import CRSP momentum returns
+CRSP_Stocks_GS_returns <- as.data.table(read.csv("gs_return.csv"))
+# import monthly value weight stock returns
+Monthly_CRSP_Stocks <- as.data.table(read.csv("sp500_mkt.csv"))
+start <- 1990
+end <-2018
+# Illustrate WML return in the last 10 years 
+CRSP_Stocks_GS_returns <- CRSP_Stocks_GS_returns[Year>=start & Year <=end]
+vwretd <- Monthly_CRSP_Stocks[Year >= start & Year <=end]$vwretd
+
+GS_Ret <- CRSP_Stocks_GS_returns[GS_decile ==1, GS_Ret] - CRSP_Stocks_GS_returns[GS_decile ==10, GS_Ret]
+#GS_Winner <- CRSP_Stocks_GS_returns[GS_decile ==1, GS_Ret]
+#GS_Loser <- CRSP_Stocks_GS_returns[GS_decile ==10, GS_Ret]
+
+dates <- unique(CRSP_Stocks_GS_returns[Year>=start & Year <=end, .(Year,Month)])
+dates <- dates[, date := paste0(Year,"-",Month)]
+dates <- ymd(dates$date,truncated = 1)
+
+# get cumulative return 
+vwretd_CumProd <- cumprod(vwretd + 1)
+#GS_WinnerCumProd <- cumprod(GS_Winner + 1)
+#GS_LoserCumProd <- cumprod(GS_Loser + 1)
+GS_RetCumProd <- cumprod(GS_Ret + 1)
+
+
+plot(ylab="Cumulative Return", ylim = c(0.8, 15), x =dates, y= GS_RetCumProd, type ="l", col ="red", main = "Growth Sales VS value-weighted Market Portfolio (1990-2018)")
+lines(x =dates, y= vwretd_CumProd, col ="green")
+#lines(x =dates, y= GS_WinnerCumProd, col="black")
+#lines(x =dates, y= GS_LoserCumProd, col="purple")
+#legend("topleft",legend=c("Value-Weighted","GS Winner","GS Loser","GS WML"),fill=c("green","black","purple","red"), cex = 0.8)
+legend("topleft",legend=c("Value-Weighted","GS WML"),fill=c("green","red"), cex = 0.8)
+```
+
+
