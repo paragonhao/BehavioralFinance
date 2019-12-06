@@ -122,7 +122,7 @@ finaldata[, "lag_sale":= shift(sale, n = 6, type="lag"),by =.(PERMCO)]
 finaldata[, "GS" := log(lag_sale/shift(lag_sale, n=12)), by =.(PERMCO)]
 
 # rebalance at April
-crsp_mergedBy_April <- finaldata[Month == 6, ]
+crsp_mergedBy_April <- finaldata[Month == 7, ]
 
 # average of growth sales
 crsp_mergedBy_April[, avg5yrGS := shift(rollapply(GS, 5, function(x){mean(x, na.rm = T)}, fill = NA, align="right", partial = T)), by = c("PERMCO")]
