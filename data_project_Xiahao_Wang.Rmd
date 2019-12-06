@@ -16,17 +16,39 @@ output: pdf_document
 \end{tabu}
 
 
-## Objective: Replicate the sales in growth anomalies discussed in class fro the period 1990 to 2018
+## Objective: Replicate the sales in growth anomalies discussed in class from the period 1990 to 2018
 
-For many years, scholars and investment professionals hav argued that value strategies  outperform the market. This data project takes references from Josef Andrei and Robert (1994) and tries to investigate sales growth as an anomaly between 1990 to 2018. 
+For many years, scholars and investment professionals have argued that value strategies  outperform the market. This data project takes references from Josef Andrei and Robert (1994) and tries to investigate sales growth as an anomaly between 1990 to 2018. 
 
 This project will sort the stock into 10 deciles and identify the performance of the long-short portfolio against the performance of the market. 
 
 1. \textbf{Universe of stocks: } 
 
-Stock return data is sourced from CRSP while the sales data is sourced from compustat both availabe from WRDS. Following the LSV paper, I restrict the sample to common shares( share code 10 and 11) and to securities traded in the New York Stock Exchange, American Stock Exchange, or the Nasdaq Stock Exchange (exchange codes 1, 2, and 3) from 1990 Jan to 2018 Dec. 
+Stock return data is sourced from CRSP while the sales data is sourced from compustat both availabe from WRDS. Following the LSV paper, I restrict the sample to common shares( share code 10 and 11) and to securities traded in the New York Stock Exchange, American Stock Exchange, or the Nasdaq Stock Exchange (exchange codes 1, 2, and 3) from 1990 Jan to 2018 Dec. Linking table is also needed to merge the Compustat with the the CRSP data.
 
-2. \textbf{Criteria for sorting: } 
+2. \textbf{Data cleaning: } 
+
+2.a \textbf{Handle missing data in Delisting Return (DLRET), and Return (RET):} 
+
+The missing data in RET are denoted by 'A','C','P','S','T','B','C',
+The missing data in DLRET are denoted by -66, -77, -88, -99
+Replace these missing data with NA. 
+
+
+
+2.b \textbf{Delisting return calculation:} 
+
+
+To calculate the cum-dividend return (Ret), let RET be cum-dividend return if DLRET is missing. 
+If DLRET is not missing and RET is missing, let DLRET be just cum-dividend return.
+If both are not missing, use the formula from lecture notes:  Ret = (1 + DLRET)(1 + RET) - 1  to get the cum-dividend return.
+
+
+2.c \textbf{Merging CRSP and Compustat:} 
+
+Merge the Compustat data with Linktable first, then merge CRSP data with Compustat by variable gvkey and year. Do not remove the NAs in the dataset. 
+
+3. \textbf{Criteria for sorting: } 
 
 In this project, we follow the assumption from the Fama French paper(1993) that rebalancing takes play at the end of June by which most of the companies would have reported their earnings. Annaul sales growth data is first generated using the sales data, firms that do not have sales data will not be included in the portfolio construction. Then a trailing 5 year average is then computed to sort the stocks into 10 portfolios. 
 
@@ -48,13 +70,17 @@ summary <- as.data.table(read.csv("summary.csv"))
 title <- c("Excess Mean Return","Volatility","SR","SK(m)")
 summary <- cbind(Return_Statistics = title,summary)
 
-kable(summary, "latex", booktabs =T, caption = "Sales Growth decile portfolios", align ="l") %>% kable_styling(latex_options = c("striped", "scale_down"), position = "center") %>% add_header_above(c(" ", "Sales Growth decile Portfolios" = 11)) 
-
 ```
 
 
 
 ## Performance Against Market
+
+```{r echo=FALSE}
+kable(summary, "latex", booktabs =T, caption = "Sales Growth decile portfolios", align ="l") %>% kable_styling(latex_options = c("striped", "scale_down"), position = "center") %>% add_header_above(c(" ", "Sales Growth decile Portfolios" = 11)) 
+```
+
+
 
 The following chart illustrates the performance of the value strategy with sales growth, a break down of winner minus loser deciles and also a comparision with market value-weighted portfolio. SP500 value-weight portfolio is used as a benchmark portfolio. This indicates that a long-short strategy on growth sales along would not deliver superior return as compared to the market portfolio. 
 
@@ -92,4 +118,8 @@ lines(x =dates, y= vwretd_CumProd, col ="green")
 legend("topleft",legend=c("Value-Weighted","GS WML"),fill=c("green","red"), cex = 0.8)
 ```
 
+
+## Appendix 
+
+Source code (R) : https://github.com/paragonhao/BehavioralFinance/blob/master/data_project_xiahao.R
 
